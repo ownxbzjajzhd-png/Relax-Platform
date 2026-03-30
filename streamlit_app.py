@@ -1,34 +1,58 @@
 import streamlit as st
+from datetime import datetime, timedelta
 
-st.set_page_config(page_title="Relax", page_icon="💰", layout="centered")
+# إعدادات واجهة منصة Relax
+st.set_page_config(page_title="Relax Smart", page_icon="🟢", layout="centered")
 
-if 'user_db' not in st.session_state:
-    st.session_state.user_db = {"عمر": "1234"}
-if 'logged_in' not in st.session_state:
-    st.session_state.logged_in = False
+# --- نظام البيانات المؤقتة ---
+if 'balance_profit' not in st.session_state:
+    st.session_state.balance_profit = 18.50  # أرباح قابلة للسحب
+if 'initial_deposit' not in st.session_state:
+    st.session_state.initial_deposit = 1000.00  # الإيداع الأساسي
+if 'deposit_date' not in st.session_state:
+    st.session_state.deposit_date = datetime.now() - timedelta(days=5) # مثال: أودع منذ 5 أيام
 
-if not st.session_state.logged_in:
-    st.markdown("<h1 style='text-align: center;'>🔐 منصة Relax الذكية</h1>", unsafe_allow_html=True)
-    tab1, tab2 = st.tabs(["تسجيل الدخول", "إنشاء حساب جديد"])
-    with tab1:
-        u = st.text_input("الاسم")
-        p = st.text_input("السر", type="password")
-        if st.button("دخول"):
-            if u in st.session_state.user_db and st.session_state.user_db[u] == p:
-                st.session_state.logged_in = True
-                st.rerun()
-    with tab2:
-        nu = st.text_input("اسم جديد")
-        np = st.text_input("سر جديد", type="password")
-        if st.button("تسجيل"):
-            st.session_state.user_db[nu] = np
-            st.success("تم! سجل دخولك الآن.")
-else:
-    st.title("💰 محفظة Relax")
-    st.metric("إجمالي الأصول (USDT)", "10192.03", "12%")
-    if st.button("💰 تعبئة رصيد"):
-        st.info("🔄 حول USDT (شبكة BEP20) إلى:")
-        st.code("0x05aec19d3d5e5cb9400caff56ab69c3799019942")
-    if st.sidebar.button("خروج"):
-        st.session_state.logged_in = False
-        st.rerun()
+# حساب الـ 90 يوم
+days_passed = (datetime.now() - st.session_state.deposit_date).days
+days_remaining = max(0, 90 - days_passed)
+
+st.markdown("<h2 style='text-align: center; color: #28a745;'>📊 منصة Relax الذكية</h2>", unsafe_allow_html=True)
+
+# عرض الحالة المالية للمستثمر
+col1, col2 = st.columns(2)
+with col1:
+    st.metric("أرباحك (قابلة للسحب)", f"{st.session_state.balance_profit} USDT")
+with col2:
+    st.metric("رأس المال المستثمر", f"{st.session_state.initial_deposit} USDT")
+    st.caption(f"🔒 قفل السيولة: {days_remaining} يوم متبقي")
+
+st.divider()
+
+# القائمة الرئيسية للعمليات
+option = st.selectbox("اختر ما تريد القيام به:", ["نظرة عامة", "تعبئة رصيد (إيداع)", "سحب الأرباح", "سحب رأس المال"])
+
+if option == "تعبئة رصيد (إيداع)":
+    st.info("🔄 حول USDT (شبكة BEP20) إلى العنوان أدناه:")
+    st.code("0x05aec19d3d5e5cb9400caff56ab69c3799019942")
+    st.file_uploader("ارفع صورة إثبات التحويل")
+    if st.button("تأكيد الإيداع"):
+        st.success("تم الإرسال! سيتم تفعيل باقة الـ 90 يوم فور التأكيد.")
+
+elif option == "سحب الأرباح":
+    st.write(f"المبلغ المتاح للسحب الفوري: **{st.session_state.balance_profit} USDT**")
+    st.number_input("المبلغ المراد سحبه", min_value=5.0)
+    st.text_input("عنوان محفظتك (BEP20)")
+    if st.button("طلب سحب الأرباح"):
+        st.success("تم طلب السحب! سيصلك خلال 24 ساعة.")
+
+elif option == "سحب رأس المال":
+    if days_remaining > 0:
+        st.error(f"🚫 غير مسموح بسحب رأس المال حالياً. يجب مرور 90 يوماً. متبقي {days_remaining} يوم.")
+        st.info("ملاحظة: يمكنك سحب أرباحك اليومية بشكل طبيعي من قسم 'سحب الأرباح'.")
+    else:
+        st.success("✅ انتهت فترة القفل. يمكنك سحب رأس مالك الآن.")
+        st.button("سحب رأس المال")
+
+# تسجيل الخروج
+if st.sidebar.button("تسجيل الخروج"):
+    st.rerun()
